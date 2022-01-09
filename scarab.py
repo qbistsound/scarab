@@ -10,7 +10,7 @@ from lxml import html, etree
 BUFFER = []
 ELEMENTS = []
 ELEMENT_MAP = {"host": 1, "port": 2, "user": -1, "pass": -1}
-CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 32, "host": "google.com", "echo": False, "type": "HTTPS", "file": "list.txt", "ssl": False, "timeout": 10}
+CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 32, "host": "google.com", "echo": False, "type": "SOCKS5", "file": "list.txt", "ssl": False, "timeout": 10}
 HELP = f"Usage: {sys.argv[0]} [-f file | -u url] [-p <text|table|csv|script:name>] [-o <output-file>] [-a <remote-addres>] [-t <thread-size>] [-c SOCKS5|SOCKS4|HTTP|HTTPS] [-m (index(host), index(port), index(user), index(password)] [-v]..."
 #cpx(address, method) - calls the connection to proxy returns True or False
 def cpx(address, method):
@@ -30,12 +30,12 @@ def cpx(address, method):
 		if socket_type == socks.HTTP:
 			pxd = { "http": f"http://{address}" }
 			response = requests.get(url, timeout=CONFIG["timeout"], proxies=pxd)
-			return False if not response.startswith(b"HTTP/1") else True
+			return False if not response.status_code == 200 else True
 		#HTTPS
 		if socket_type == -1:
-			pxd = { "https": f"https://{address}" }
+			pxd = { "http": f"http://{address}", "https": f"https://{address}" }
 			response = requests.get(url, timeout=CONFIG["timeout"], proxies=pxd)
-			return False if not response.startswith(b"HTTP/1") else True
+			return False if not response.status_code == 200 else True
 		#
 		socket.inet_aton(addr) #validates the ip
 		so.set_proxy(socket_type, addr, port, False, user, auth)
@@ -173,6 +173,6 @@ with concurrent.futures.ThreadPoolExecutor(max_workers = int(CONFIG["threads"]))
 			if CONFIG["echo"] == True:
 				print(f"{url}\t[OK]")
 #output
-text_file = open(CONFIG["file"], "w")
+text_file = open(CONFIG["file"], "wt")
 text_file.write("\n".join(BUFFER))
 text_file.close()
