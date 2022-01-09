@@ -75,6 +75,7 @@ def cpx(address, method):
 			pxd = { "http": f"http://{address}", "https": f"https://{address}" }
 			response = requests.get(url, timeout=CONFIG["timeout"], proxies=pxd)
 			return False if not response.status_code == 200 else True
+		#CONTINUE
 		socket.inet_aton(addr) #validates the ip
 		so.set_proxy(socket_type, addr, port, False, user, auth)
 		so.settimeout(CONFIG["timeout"])
@@ -88,7 +89,7 @@ def cpx(address, method):
 		#requestr
 		request = "GET / HTTP/1.0\r\nHost: " + CONFIG["host"] + "\r\n\r\n"
 		ssock.send(str.encode(request))
-		response = ssock.recv(4096)
+		response = ssock.recv(1024)
 		if not response.startswith(b"HTTP/1"): return False
 		#ssl check
 		if CONFIG["ssl"] == True:
@@ -141,13 +142,9 @@ def parse_csv(string):
 	elements = []
 	reader = csv.reader(string.split('\n'), delimiter=',')
 	for row in reader:
-		host = row[ELEMENT_MAP["host"]].strip()
-		port = row[ELEMENT_MAP["port"]].strip()
 		user = "" if ELEMENT_MAP["user"] < 0 else row[ELEMENT_MAP["user"]].strip()
 		auth = "" if ELEMENT_MAP["pass"] < 0 else row[ELEMENT_MAP["pass"]].strip()
-		host_t = host if port == "" else f"{host}:{port}"
-		user_t = "" if user == "" else f"{user}:{auth}@"
-		elements.append(f"{user_t}{host_t}")
+		elements.append(concat_addr(row[ELEMENT_MAP["host"]], row[ELEMENT_MAP["port"]], user, auth))
 	return elements
 #parses table
 def parse_table(string):
@@ -160,13 +157,15 @@ def parse_table(string):
 	return elements
 #parse xmld
 def parse_xmld(element):
-	host = element[ELEMENT_MAP["host"]].text.strip()
-	port = element[ELEMENT_MAP["port"]].text.strip()
 	user = "" if ELEMENT_MAP["user"] < 0 else row[ELEMENT_MAP["user"]].text.strip()
 	auth = "" if ELEMENT_MAP["pass"] < 0 else row[ELEMENT_MAP["pass"]].text.strip()
+	return concat_addr(element[ELEMENT_MAP["host"]].text, element[ELEMENT_MAP["port"]].text, user, auth)
+#concatr
+def concat_addr(host, port, user, auth):
 	host_t = host if port == "" else f"{host}:{port}"
 	user_t = "" if user == "" else f"{user}:{auth}@"
 	return f"{user_t}{host_t}"
+	
 #parse map
 def parse_map(string):
 	keys = list(ELEMENT_MAP.keys());
