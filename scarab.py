@@ -11,18 +11,11 @@ from lxml import html, etree
 from contextlib import suppress
 
 #global variables
-HTTPD = None
-BUFFER = []
-ELEMENTS = []
-PROXYSET = []
-ELEMENT_MAP = {"host": 1, "port": 2, "user": -1, "pass": -1}
+HTTPD = None; BUFFER = []; ELEMENTS = []; PROXYSET = []; ELEMENT_MAP = {"host": 1, "port": 2, "user": -1, "pass": -1}
 CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 128, "host": "google.com", "echo": False, "type": "SOCKS5", "file": "list.txt", "ssl": False, "timeout": 10, "xserver": -1}
 HELP = f"Usage: {sys.argv[0]} [-f file | -u url] [-p <text|table|csv|script:name>] [-o <output-file>] [-a <remote-addres>] [-t <thread-size>] [-c SOCKS5|SOCKS4|HTTP|HTTPS] [-m (index(host), index(port), index(user), index(password)] [-v] [-w port]..."
 #signal
-def signal_handle(sig, frame):
-	print("stopping server")
-	HTTPD.stop();
-	sys.exit(0);
+def signal_handle(sig, frame): print("stopping server"); HTTPD.stop(); sys.exit(0);
 #proxy server class
 class scproxy(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -30,11 +23,9 @@ class scproxy(http.server.SimpleHTTPRequestHandler):
     	self.end_headers()
     	request = None
     	with suppress(ValueError): request = urllib.request.Request(self.path[1:])
-    	#
     	if request == None: return
     	parameters = select_list()
     	stype = "http" if CONFIG["ssl"] == False else "https"
-    	#
     	if parameters == None: return
     	request.set_proxy(f"{parameters['host']}:{parameters['port']}", stype)
     	self.copyfile(urllib.request.urlopen(request, timeout=CONFIG["timeout"]), self.wfile)
@@ -58,42 +49,32 @@ def cpx(address, method):
 	if method == "SOCKS4": socket_type = socks.SOCKS4
 	so = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
 	try:
-		user = getuser(address)
-		auth = getpass(address)
 		addr = socket.gethostbyname(getaddr(address, method))
-		port = getport(address, method)
 		url = f"http://{CONFIG['host']}" if CONFIG["ssl"] == False else f"https://{CONFIG['host']}"
 		if addr == "0.0.0.0": return False
-		#HTTP
-		if socket_type == socks.HTTP:
+		if socket_type == socks.HTTP: #HTTP
 			pxd = { "http": f"http://{address}" }
 			response = requests.get(url, timeout=CONFIG["timeout"], proxies=pxd)
 			return False if not response.status_code == 200 else True
-		#HTTPS
-		if socket_type == -1:
+		if socket_type == -1: #HTTPS
 			pxd = { "http": f"http://{address}", "https": f"https://{address}" }
 			response = requests.get(url, timeout=CONFIG["timeout"], proxies=pxd)
 			return False if not response.status_code == 200 else True
 		#CONTINUE
 		socket.inet_aton(addr) #validates the ip
-		so.set_proxy(socket_type, addr, port, False, user, auth)
+		so.set_proxy(socket_type, addr, getport(address, method), False, getuser(address), getpass(address))
 		so.settimeout(CONFIG["timeout"])
 		cport = 443 if CONFIG["ssl"] == True else 80
 		so.connect((CONFIG["host"], cport))
 		#ssl wrap
-		if CONFIG["ssl"] == True:
-			context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-			ssock = context.wrap_socket(so)
-		else: ssock = so
-		#requestr
-		request = "GET / HTTP/1.0\r\nHost: " + CONFIG["host"] + "\r\n\r\n"
-		ssock.send(str.encode(request))
-		response = ssock.recv(1024)
+		ssock = ssl.SSLContext(ssl.PROTOCOL_SSLv23).wrap_socket(so) if CONFIG["ssl"] == True else so
+		#request
+		ssock.send(str.encode("GET / HTTP/1.0\r\nHost: " + CONFIG["host"] + "\r\n\r\n"))
+		response = ssock.recv(128)
 		if not response.startswith(b"HTTP/1"): return False
 		#ssl check
 		if CONFIG["ssl"] == True:
-			cert = ssl.DER_cert_to_PEM_cert(ssock.getpeercert(True))
-			if len(cert) <= 0: return False
+			if len(ssl.DER_cert_to_PEM_cert(ssock.getpeercert(True))) <= 0: return False
 		#close
 		ssock.close()
 		so.close()
@@ -164,7 +145,6 @@ def concat_addr(host, port, user, auth):
 	host_t = host if port == "" else f"{host}:{port}"
 	user_t = "" if user == "" else f"{user}:{auth}@"
 	return f"{user_t}{host_t}"
-	
 #parse map
 def parse_map(string):
 	keys = list(ELEMENT_MAP.keys());
@@ -196,7 +176,6 @@ try:
 		if ARG in ("-m", "--map"): parse_map(OPT)
 		if ARG in ("-x", "--x-server"): CONFIG["xserver"] = int(OPT) if OPT.isnumeric() else -1
 except getopt.GetoptError: raise SystemExit(HELP)
-#read contents
 CONTENT = text_f(CONFIG["source"]) if CONFIG["method"] == "fs" else text_u(CONFIG["source"])
 #parse
 if CONFIG["parser"] == "text": 	ELEMENTS = CONTENT.split("\n")
@@ -217,7 +196,6 @@ if len(BUFFER) > 0:
 	text_file = open(CONFIG["file"], "wt")
 	text_file.write("\n".join(BUFFER))
 	text_file.close()
-#
 if CONFIG["xserver"] > 0:
 	start_xserver(CONFIG["xserver"])
 	signal.signal(signal.SIGINT, signal_handle)
