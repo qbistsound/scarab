@@ -66,7 +66,7 @@ python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-
 
 # Server
   
-  *scarab* now comes with a very simple built in http service, which can utilize the list.txt in executing folder or an external proxy list in [user:pass@]host:port format.
+  *scarab* now comes with a very simple built in http service, which can utilize the list.txt in executing folder or an external proxy list in [user:pass@]host:port format. ie. `python3 scarab.py -x 6666` will launch a www server only, while `python3 scarab.py -f file.csv -p csv -m 1,2 -x 6666` will process file.csv then launch a proxy server utilizing the proxies from the output file or list.txt in the executing folder.
   
 # Details
   
