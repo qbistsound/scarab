@@ -1,12 +1,8 @@
-import sys
-import csv
-import getopt
 import os.path
-import concurrent.futures
-import socket
-import socks
-import requests
 import importlib
+import concurrent.futures
+import sys, csv, getopt
+import socket, socks, ssl, requests
 
 from lxml import html, etree
 
@@ -14,7 +10,7 @@ from lxml import html, etree
 BUFFER = []
 ELEMENTS = []
 ELEMENT_MAP = {"host": 1, "port": 2, "user": -1, "pass": -1}
-CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 32, "host": "www.baidu.com", "echo": False, "method": "SOCKS5", "file": "list.txt"}
+CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 32, "host": "www.baidu.com", "echo": False, "method": "SOCKS5", "file": "list.txt", "ssl": False}
 HELP = f"Usage: {sys.argv[0]} [-f file | -u url] [-p <text|table|csv|script:name>] [-o <output-file>] [-a <remote-addres>] [-t <thread-size>] [-m (index(host), index(port), index(user), index(password)] [-v]..."
 #cpx(address, method) - calls the connection to proxy returns True or False
 def cpx(address, method):
@@ -31,10 +27,20 @@ def cpx(address, method):
 		socket.inet_aton(addr) #validates the ip
 		so.set_proxy(socket_type, addr, port, False, user, auth)
 		so.settimeout(10)
+		if CONFIG["ssl"] == True:
+			context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+			ssock = context.wrap_socket(so)
+		else: ssock = so
+			
 		request = "GET / HTTP/1.0\r\nHost: " + CONFIG["host"] + "\r\n\r\n"
-		so.connect((CONFIG["host"], 80))
-		so.send(str.encode(request))
-		response = so.recv(4096)
+		cport = 443 if CONFIG["ssl"] == True else 80
+		ssock.connect((CONFIG["host"], cport))
+		ssock.send(str.encode(request))
+		response = ssock.recv(4096)
+		if CONFIG["ssl"] == True:
+			cert = ssl.DER_cert_to_PEM_cert(ssock.getpeercert(True))
+			if len(cert) <= 0: return False
+		ssock.close()
 		so.close()
 		return True if response.startswith(b"HTTP/1") else False
 	except socket.error as e:
@@ -120,13 +126,14 @@ def parse_ext(string):
 	return module._parse(string, ELEMENT_MAP)
 #start
 try:
-	ARGUMENTS, OPTIONS = getopt.getopt(sys.argv[1:],"hf:u:p:o:a:t:m:v", ["help", "file=", "url=", "parser=", "output=", "address=", "threads=", "map=", "verbose"])
+	ARGUMENTS, OPTIONS = getopt.getopt(sys.argv[1:],"hf:u:p:o:a:t:m:vs", ["help", "file=", "url=", "parser=", "output=", "address=", "threads=", "map=", "verbose", "ssl"])
 	for ARG, OPT in ARGUMENTS:
 		if ARG in ("-h", "--help"): raise SystemExit(HELP)
 		if ARG in ("-a", "--address"): CONFIG["host"] = OPT
 		if ARG in ("-p", "--parser"): CONFIG["parser"] = OPT
 		if ARG in ("-o", "--output"): CONFIG["file"] = OPT
 		if ARG in ("-v", "--verbose"): CONFIG["echo"] = True
+		if ARG in ("-s", "--ssl"): CONFIG["ssl"] = True
 		if ARG in ("-f", "--file"): CONFIG["method"] = "fs"; CONFIG["source"] = OPT
 		if ARG in ("-u", "--url"): CONFIG["method"] = "url"; CONFIG["source"] = OPT
 		if ARG in ("-m", "--map"): parse_map(OPT)
