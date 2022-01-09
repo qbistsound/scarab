@@ -57,11 +57,8 @@ python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-
   
   ```
     def _parse(string, definition):
-  
       elements = []
-  
       ... your code ...
-  
       return elements
   ```
   
