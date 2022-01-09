@@ -2,7 +2,7 @@
 
 Usage:
 
-python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-file] [-a remote-addres] [-t thread-size] [-m (index(host), index(port), index(user), index(password)]
+python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-file] [-a remote-addres] [-t thread-size] [-c SOCKS5|SOCKS4|HTTP|HTTPS ] [-m (index(host), index(port), index(user), index(password)]
   
   -f <file> | --file=<file>       Defines file source to read from
   
@@ -18,7 +18,9 @@ python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-
   
   -m <map>  | --map=<map>         Defines field mapping for table and csv parsers, map options are described below.
   
-  -s | -ssl                       Enables SSL connections, otherwise all proxy connections are attempted through TCP
+  -s | --ssl                      Enables SSL connections, otherwise all proxy connections are attempted through TCP
+  
+  -c | --connection               Defines connection mode, accepted modes are SOCKS5, SOCKS4, HTTP, HTTPS
   
   -v | -verbose                   Enables Verbose mode.
   
