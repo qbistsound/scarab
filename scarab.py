@@ -14,8 +14,8 @@ from lxml import html, etree
 BUFFER = []
 ELEMENTS = []
 ELEMENT_MAP = {"host": 1, "port": 2, "user": -1, "pass": -1}
-CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 32, "host": "www.baidu.com", "echo": True, "method": "SOCKS5", "file": "list.txt"}
-HELP = f"Usage: {sys.argv[0]} [-f file | -u url] [-p <text|table|csv|script:name>] [-o <output-file>] [-a <remote-addres>] [-t <thread-size>] [-m (index(host), index(port), index(user), index(password)]..."
+CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 32, "host": "www.baidu.com", "echo": False, "method": "SOCKS5", "file": "list.txt"}
+HELP = f"Usage: {sys.argv[0]} [-f file | -u url] [-p <text|table|csv|script:name>] [-o <output-file>] [-a <remote-addres>] [-t <thread-size>] [-m (index(host), index(port), index(user), index(password)] [-v]..."
 #cpx(address, method) - calls the connection to proxy returns True or False
 def cpx(address, method):
 	socket_type = socks.SOCKS5
@@ -120,12 +120,13 @@ def parse_ext(string):
 	return module._parse(string, ELEMENT_MAP)
 #start
 try:
-	ARGUMENTS, OPTIONS = getopt.getopt(sys.argv[1:],"hf:u:p:o:a:t:m:", ["help", "file=", "url=", "parser=", "output=", "address=", "threads=", "map="])
+	ARGUMENTS, OPTIONS = getopt.getopt(sys.argv[1:],"hf:u:p:o:a:t:m:v", ["help", "file=", "url=", "parser=", "output=", "address=", "threads=", "map=", "verbose"])
 	for ARG, OPT in ARGUMENTS:
 		if ARG in ("-h", "--help"): raise SystemExit(HELP)
 		if ARG in ("-a", "--address"): CONFIG["host"] = OPT
 		if ARG in ("-p", "--parser"): CONFIG["parser"] = OPT
 		if ARG in ("-o", "--output"): CONFIG["file"] = OPT
+		if ARG in ("-v", "--verbose"): CONFIG["echo"] = True
 		if ARG in ("-f", "--file"): CONFIG["method"] = "fs"; CONFIG["source"] = OPT
 		if ARG in ("-u", "--url"): CONFIG["method"] = "url"; CONFIG["source"] = OPT
 		if ARG in ("-m", "--map"): parse_map(OPT)
@@ -147,7 +148,6 @@ with concurrent.futures.ThreadPoolExecutor(max_workers = int(CONFIG["threads"]))
 			if CONFIG["echo"] == True:
 				print(f"{url}\t[OK]")
 #output
-print(BUFFER)
 text_file = open(CONFIG["file"], "w")
 text_file.write("\n".join(BUFFER))
 text_file.close()
