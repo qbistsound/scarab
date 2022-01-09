@@ -9,7 +9,6 @@ import sys, csv, getopt
 import socket, socks, ssl, requests
 from lxml import html, etree
 from contextlib import suppress
-
 #global variables
 HTTPD = None; BUFFER = []; ELEMENTS = []; PROXYSET = []; ELEMENT_MAP = {"host": 1, "port": 2, "user": -1, "pass": -1}
 CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 128, "host": "google.com", "echo": False, "type": "SOCKS5", "file": "list.txt", "ssl": False, "timeout": 10, "xserver": -1}
