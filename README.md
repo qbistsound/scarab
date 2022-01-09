@@ -18,6 +18,11 @@ python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-
   
   -m <map>  | --map=<map>         Defines field mapping for table and csv parsers, map options are described below.
   
+  -s | -ssl                       Enables SSL connections, otherwise all proxy connections are attempted through TCP
+  
+  -v | -verbose                   Enables Verbose mode.
+  
+  
   
 # Parsers
   
