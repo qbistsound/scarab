@@ -10,11 +10,12 @@ from lxml import html, etree
 BUFFER = []
 ELEMENTS = []
 ELEMENT_MAP = {"host": 1, "port": 2, "user": -1, "pass": -1}
-CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 32, "host": "www.baidu.com", "echo": False, "method": "SOCKS5", "file": "list.txt", "ssl": False}
-HELP = f"Usage: {sys.argv[0]} [-f file | -u url] [-p <text|table|csv|script:name>] [-o <output-file>] [-a <remote-addres>] [-t <thread-size>] [-m (index(host), index(port), index(user), index(password)] [-v]..."
+CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 32, "host": "google.com", "echo": False, "type": "HTTPS", "file": "list.txt", "ssl": False, "timeout": 10}
+HELP = f"Usage: {sys.argv[0]} [-f file | -u url] [-p <text|table|csv|script:name>] [-o <output-file>] [-a <remote-addres>] [-t <thread-size>] [-c SOCKS5|SOCKS4|HTTP|HTTPS] [-m (index(host), index(port), index(user), index(password)] [-v]..."
 #cpx(address, method) - calls the connection to proxy returns True or False
 def cpx(address, method):
 	socket_type = socks.SOCKS5
+	if method == "HTTPS": socket_type = -1
 	if method == "HTTP": socket_type = socks.HTTP
 	if method == "SOCKS4": socket_type = socks.SOCKS4
 	so = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,7 +24,19 @@ def cpx(address, method):
 		auth = getpass(address)
 		addr = socket.gethostbyname(getaddr(address, method))
 		port = getport(address, method)
+		url = f"http://{CONFIG['host']}" if CONFIG["ssl"] == False else f"https://{CONFIG['host']}"
 		if addr == "0.0.0.0": return False
+		#HTTP
+		if socket_type == socks.HTTP:
+			pxd = { "http": f"http://{address}" }
+			response = requests.get(url, timeout=CONFIG["timeout"], proxies=pxd)
+			return False if not response.startswith(b"HTTP/1") else True
+		#HTTPS
+		if socket_type == -1:
+			pxd = { "https": f"https://{address}" }
+			response = requests.get(url, timeout=CONFIG["timeout"], proxies=pxd)
+			return False if not response.startswith(b"HTTP/1") else True
+		#
 		socket.inet_aton(addr) #validates the ip
 		so.set_proxy(socket_type, addr, port, False, user, auth)
 		so.settimeout(10)
@@ -130,12 +143,13 @@ def parse_ext(string):
 	return module._parse(string, ELEMENT_MAP)
 #start
 try:
-	ARGUMENTS, OPTIONS = getopt.getopt(sys.argv[1:],"hf:u:p:o:a:t:m:vs", ["help", "file=", "url=", "parser=", "output=", "address=", "threads=", "map=", "verbose", "ssl"])
+	ARGUMENTS, OPTIONS = getopt.getopt(sys.argv[1:],"hf:u:p:o:c:a:t:m:vs", ["help", "file=", "url=", "parser=", "output=", "connection=", "address=", "threads=", "map=", "verbose", "ssl"])
 	for ARG, OPT in ARGUMENTS:
 		if ARG in ("-h", "--help"): raise SystemExit(HELP)
 		if ARG in ("-a", "--address"): CONFIG["host"] = OPT
 		if ARG in ("-p", "--parser"): CONFIG["parser"] = OPT
 		if ARG in ("-o", "--output"): CONFIG["file"] = OPT
+		if ARG in ("-c", "--connection"): CONFIG["type"] = OPT.upper()
 		if ARG in ("-v", "--verbose"): CONFIG["echo"] = True
 		if ARG in ("-s", "--ssl"): CONFIG["ssl"] = True
 		if ARG in ("-f", "--file"): CONFIG["method"] = "fs"; CONFIG["source"] = OPT
@@ -151,7 +165,7 @@ if CONFIG["parser"] == "csv": ELEMENTS = parse_csv(CONTENT)
 if CONFIG["parser"].startswith("script"): ELEMENTS = parse_ext(CONTENT)
 #threads
 with concurrent.futures.ThreadPoolExecutor(max_workers = int(CONFIG["threads"])) as executor:
-	future_set = {executor.submit(cpx, url, CONFIG["method"]): url for url in ELEMENTS}
+	future_set = {executor.submit(cpx, url, CONFIG["type"]): url for url in ELEMENTS}
 	for future in concurrent.futures.as_completed(future_set):
 		url = future_set[future]
 		if future.result() == True:
