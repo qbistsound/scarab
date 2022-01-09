@@ -26,18 +26,17 @@ def signal_handle(sig, frame):
 #proxy server class
 class scproxy(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-    	url = self.path[1:]
     	self.send_response(200)
     	self.end_headers()
     	request = None
-    	with suppress(ValueError): request = urllib.request.Request(url)
+    	with suppress(ValueError): request = urllib.request.Request(self.path[1:])
     	#
     	if request == None: return
     	parameters = select_list()
     	stype = "http" if CONFIG["ssl"] == False else "https"
     	#
     	if parameters == None: return
-    	request.set_proxy(parameters["host"], stype)
+    	request.set_proxy(f"{parameters['host']}:{parameters['port']}", stype)
     	self.copyfile(urllib.request.urlopen(request, timeout=CONFIG["timeout"]), self.wfile)
 #select proxy
 def select_list():
