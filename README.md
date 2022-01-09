@@ -54,7 +54,8 @@ python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-
 # Plugins
   
   Scarab can also call external functions within the same directory it resides in to parse an element.  An example plugin is included, this file MUST include a _parse(string, map), where `string` represents the content from the file or url source, and `map` represents the mapping created by scarab before calling.  To use the plugin parser use `-p script:plugin` for plugin.py.
-  `def _parse(string, definition):
+  `
+    def _parse(string, definition):
   
       elements = []
   
