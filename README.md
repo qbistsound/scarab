@@ -6,25 +6,27 @@ Usage:
 
 python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-file] [-a remote-addres] [-t thread-size] [-c SOCKS5|SOCKS4|HTTP|HTTPS ] [-m (index(host), index(port), index(user), index(password)]
   
-  -f <file> | --file=<file>       Defines file source to read from
+  -f <file> | --file=(file)       Defines file source to read from
   
-  -u <url>  | --url=<url>         Defines a URL to read from instead
+  -u <url>  | --url=(url)         Defines a URL to read from instead
   
-  -p <parser> | --parser=<parser> Defines a parser, parser types are explained below
+  -p <parser> | --parser=(parser) Defines a parser, parser types are explained below
   
-  -o <file> | --output=<file>     Defines the output file, if left blank all data will be written to `list.txt` in the executing directory
+  -o <file> | --output=(file)     Defines the output file, if left blank all data will be written to `list.txt` in the executing directory
   
-  -a <host> | --address=<host>    Defines the remote address to check with the proxy, by default this is set to `google.com`
+  -a <host> | --address=(host)    Defines the remote address to check with the proxy, by default this is set to `google.com`
   
-  -t <size> | --threads=<size>    Integer value, declares number of threads to run
+  -t <size> | --threads=(size)    Integer value, declares number of threads to run
   
-  -m <map>  | --map=<map>         Defines field mapping for table and csv parsers, map options are described below.
+  -m <map>  | --map=(map)         Defines field mapping for table and csv parsers, map options are described below.
   
   -s | --ssl                      Enables SSL connections, otherwise all proxy connections are attempted through TCP
   
   -c | --connection               Defines connection mode, accepted modes are SOCKS5, SOCKS4, HTTP, HTTPS
   
   -v | -verbose                   Enables Verbose mode.
+
+  -x | -x-server=(port)           Starts simple HTTPD proxy service, this can be used without the -f command as long as the `--output=(file)` is declared or a list.txt exists in the executing folder.
   
   
   
@@ -61,7 +63,10 @@ python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-
       ... your code ...
       return elements
   ```
+
+# Server
   
+  *scarab* now comes with a very simple built in http service, which can utilize the list.txt in executing folder or an external proxy list in [user:pass@]host:port format.
   
 # Details
   
