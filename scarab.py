@@ -140,9 +140,9 @@ if CONFIG["parser"] == "csv": ELEMENTS = parse_csv(CONTENT)
 if CONFIG["parser"].startswith("script"): ELEMENTS = parse_ext(CONTENT)
 #threads
 with concurrent.futures.ThreadPoolExecutor(max_workers = int(CONFIG["threads"])) as executor:
-	future_to_url = {executor.submit(cpx, url, CONFIG["method"]): url for url in ELEMENTS}
-	for future in concurrent.futures.as_completed(future_to_url):
-		url = future_to_url[future]
+	future_set = {executor.submit(cpx, url, CONFIG["method"]): url for url in ELEMENTS}
+	for future in concurrent.futures.as_completed(future_set):
+		url = future_set[future]
 		if future.result() == True:
 			BUFFER.append(url)
 			if CONFIG["echo"] == True:
