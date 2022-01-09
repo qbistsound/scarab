@@ -27,22 +27,26 @@ def cpx(address, method):
 		socket.inet_aton(addr) #validates the ip
 		so.set_proxy(socket_type, addr, port, False, user, auth)
 		so.settimeout(10)
+		cport = 443 if CONFIG["ssl"] == True else 80
+		so.connect((CONFIG["host"], cport))
+		#ssl wrap
 		if CONFIG["ssl"] == True:
 			context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 			ssock = context.wrap_socket(so)
 		else: ssock = so
-			
+		#requestr
 		request = "GET / HTTP/1.0\r\nHost: " + CONFIG["host"] + "\r\n\r\n"
-		cport = 443 if CONFIG["ssl"] == True else 80
-		ssock.connect((CONFIG["host"], cport))
 		ssock.send(str.encode(request))
 		response = ssock.recv(4096)
+		if not response.startswith(b"HTTP/1"): return False
+		#ssl check
 		if CONFIG["ssl"] == True:
 			cert = ssl.DER_cert_to_PEM_cert(ssock.getpeercert(True))
 			if len(cert) <= 0: return False
+		#close
 		ssock.close()
 		so.close()
-		return True if response.startswith(b"HTTP/1") else False
+		return True
 	except socket.error as e:
 		if CONFIG["echo"] == True: print(f"socket.error: {address} {e}")
 		return False
