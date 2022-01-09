@@ -1,17 +1,56 @@
 import os.path
+import random
+import http.server
 import importlib
+import urllib.request
+import socketserver
 import concurrent.futures
 import sys, csv, getopt
 import socket, socks, ssl, requests
-
 from lxml import html, etree
+from contextlib import suppress
 
 #global variables
+HTTPD = None
 BUFFER = []
 ELEMENTS = []
+PROXYSET = []
 ELEMENT_MAP = {"host": 1, "port": 2, "user": -1, "pass": -1}
-CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 32, "host": "google.com", "echo": False, "type": "SOCKS5", "file": "list.txt", "ssl": False, "timeout": 10}
-HELP = f"Usage: {sys.argv[0]} [-f file | -u url] [-p <text|table|csv|script:name>] [-o <output-file>] [-a <remote-addres>] [-t <thread-size>] [-c SOCKS5|SOCKS4|HTTP|HTTPS] [-m (index(host), index(port), index(user), index(password)] [-v]..."
+CONFIG = { "method": "fs", "source": "", "parser": "text", "UA": "", "threads": 128, "host": "google.com", "echo": False, "type": "SOCKS5", "file": "list.txt", "ssl": False, "timeout": 10, "xserver": -1}
+HELP = f"Usage: {sys.argv[0]} [-f file | -u url] [-p <text|table|csv|script:name>] [-o <output-file>] [-a <remote-addres>] [-t <thread-size>] [-c SOCKS5|SOCKS4|HTTP|HTTPS] [-m (index(host), index(port), index(user), index(password)] [-v] [-w port]..."
+#signal
+def signal_handle(sig, frame):
+	print("stopping server")
+	HTTPD.stop();
+	sys.exit(0);
+#proxy server class
+class scproxy(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+    	url = self.path[1:]
+    	self.send_response(200)
+    	self.end_headers()
+    	request = None
+    	with suppress(ValueError): request = urllib.request.Request(url)
+    	#
+    	if request == None: return
+    	parameters = select_list()
+    	stype = "http" if CONFIG["ssl"] == False else "https"
+    	#
+    	if parameters == None: return
+    	request.set_proxy(parameters["host"], stype)
+    	self.copyfile(urllib.request.urlopen(request, timeout=CONFIG["timeout"]), self.wfile)
+#select proxy
+def select_list():
+	elements = text_f(CONFIG["file"]).split("\n")
+	if len(elements) < 1: return None
+	element = elements[random.randint(0, (len(elements) - 1))]
+	return {"host": getaddr(element, "HTTP"), "port": getport(element, "HTTP"), "user": getuser(element), "pass": getpass(element) }
+#start server
+def start_xserver(port):
+	parameters = select_list()
+	HTTPD = socketserver.ForkingTCPServer(('', port), scproxy)
+	print(f"proxy service started @ {port}")
+	HTTPD.serve_forever()
 #cpx(address, method) - calls the connection to proxy returns True or False
 def cpx(address, method):
 	socket_type = socks.SOCKS5
@@ -36,10 +75,9 @@ def cpx(address, method):
 			pxd = { "http": f"http://{address}", "https": f"https://{address}" }
 			response = requests.get(url, timeout=CONFIG["timeout"], proxies=pxd)
 			return False if not response.status_code == 200 else True
-		#
 		socket.inet_aton(addr) #validates the ip
 		so.set_proxy(socket_type, addr, port, False, user, auth)
-		so.settimeout(10)
+		so.settimeout(CONFIG["timeout"])
 		cport = 443 if CONFIG["ssl"] == True else 80
 		so.connect((CONFIG["host"], cport))
 		#ssl wrap
@@ -93,7 +131,10 @@ def getport(address, method):
 def text_u(url_n): return requests.get(url_n).text
 #reads textfile into string
 def text_f(file_n):
-	if not os.path.exists(file_n): raise SystemExit(f"file not found: {file_n}")
+	if not os.path.exists(file_n):
+		if CONFIG["xserver"] <= 0:
+			raise SystemExit(f"file not found: {file_n}")
+		else: return ""
 	return open(file_n,'r').read()
 #parses csv
 def parse_csv(string):
@@ -143,7 +184,7 @@ def parse_ext(string):
 	return module._parse(string, ELEMENT_MAP)
 #start
 try:
-	ARGUMENTS, OPTIONS = getopt.getopt(sys.argv[1:],"hf:u:p:o:c:a:t:m:vs", ["help", "file=", "url=", "parser=", "output=", "connection=", "address=", "threads=", "map=", "verbose", "ssl"])
+	ARGUMENTS, OPTIONS = getopt.getopt(sys.argv[1:],"hf:u:p:o:c:a:t:m:x:vs", ["help", "file=", "url=", "parser=", "output=", "connection=", "address=", "threads=", "map=", "x-server=", "verbose", "ssl"])
 	for ARG, OPT in ARGUMENTS:
 		if ARG in ("-h", "--help"): raise SystemExit(HELP)
 		if ARG in ("-a", "--address"): CONFIG["host"] = OPT
@@ -155,6 +196,7 @@ try:
 		if ARG in ("-f", "--file"): CONFIG["method"] = "fs"; CONFIG["source"] = OPT
 		if ARG in ("-u", "--url"): CONFIG["method"] = "url"; CONFIG["source"] = OPT
 		if ARG in ("-m", "--map"): parse_map(OPT)
+		if ARG in ("-x", "--x-server"): CONFIG["xserver"] = int(OPT) if OPT.isnumeric() else -1
 except getopt.GetoptError: raise SystemExit(HELP)
 #read contents
 CONTENT = text_f(CONFIG["source"]) if CONFIG["method"] == "fs" else text_u(CONFIG["source"])
@@ -173,6 +215,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers = int(CONFIG["threads"]))
 			if CONFIG["echo"] == True:
 				print(f"{url}\t[OK]")
 #output
-text_file = open(CONFIG["file"], "wt")
-text_file.write("\n".join(BUFFER))
-text_file.close()
+if len(BUFFER) > 0:
+	text_file = open(CONFIG["file"], "wt")
+	text_file.write("\n".join(BUFFER))
+	text_file.close()
+#
+if CONFIG["xserver"] > 0:
+	start_xserver(CONFIG["xserver"])
+	signal.signal(signal.SIGINT, signal_handle)
