@@ -65,4 +65,4 @@ python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-
   
 # Details
   
-  Written in 30 minutes between projects to prove that all of this can be done without extensive dependencies and massive amounts of calls and class objects, and still provide a larger and more extendible set of features.
+  Written in 30 minutes between projects to prove that all of this can be done without extensive dependencies and massive amounts of calls and class objects, and provide a wider set of features, with an increased adaptibility.
