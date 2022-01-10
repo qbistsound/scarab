@@ -47,11 +47,11 @@ python3 scarab.py [-f file | -u url] [-p text|table|csv|script:name] [-o output-
   
   ![image](https://user-images.githubusercontent.com/97387095/148680008-dc7f2b9f-cec6-47ff-be4d-7867d984d389.png)
   
-  would translate to `python3 scarab.py -u http://myproxy.list -parser table -m 1,2`
+  would translate to `python3 scarab.py -u http://myproxy.list -p table -m 1,2`
   
   ![image](https://user-images.githubusercontent.com/97387095/148681117-c28ef3b2-681b-44a4-a9b1-f37947902284.png)
 
-  would translate to `python3 scarab.py -f file.csv -parser csv -m 1,8`
+  would translate to `python3 scarab.py -f file.csv -p csv -m 1,8`
   
 # Plugins
   
