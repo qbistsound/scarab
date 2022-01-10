@@ -88,15 +88,12 @@ def cpx(address, method):
 def getpass(address):
 	if "@" not in address: return ""
 	elements = address.split("@")
-	if ":" not in elements[0]: return ""
-	else: return elements[0].split(":")[1]
+	return "" ""if ":" not in elements[0] else elements[0].split(":")[1]
 #gets user from address string
 def getuser(address):
 	if "@" not in address: return ""
 	elements = address.split("@")
-	if ":" not in elements[0]: return elements[0]
-	else: return elements[0].split(":")[0]
-	return ""
+	return elements[0] if ":" not in elements[0] else elements[0].split(":")[0]
 #gets address from address string	
 def getaddr(address, method): return address.split(":")[0] if "@" not in address else address.split("@")[1].split(":")[0]
 #gets port from address string with defaults
